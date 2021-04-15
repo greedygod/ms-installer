@@ -3,9 +3,12 @@ action=$1
 target=$2
 args=$@
 
+
 MS_BASE=/opt/
 COMPOSE_FILES=$(cat ${MS_BASE}/metersphere/compose_files)
 export COMPOSE_HTTP_TIMEOUT=180
+# 定义代理服务器，用于访问github资源
+PROXY_FOR_GITHUB=172.25.23.126:1080
 
 function usage() {
    echo "MeterSphere 控制脚本"
@@ -21,6 +24,7 @@ function usage() {
    echo "  restart   重启 MeterSphere 服务"
    echo "  reload    重新加载 MeterSphere 服务"
    echo "  upgrade   升级 MeterSphere 至最新版本"
+   echo "  upgrade [代理地址] "升级到指定版本（走代理）"
    echo "  uninstall 卸载 MeterSphere 服务"
    echo "  version   查看 MeterSphere 版本信息"
 }
@@ -55,13 +59,25 @@ function version() {
 }
 function upgrade() {
    os=`uname -a`
-   if [[ $os =~ 'Darwin' ]];then
-      MSVERSION=$(curl -s https://github.com/metersphere/metersphere/releases/latest |grep -Eo 'v[0-9]+.[0-9]+.[0-9]+')
+   if [ -z ${target} ]; then
+   # 只有1个参数时，从github获取
+         if [[ $os =~ 'Darwin' ]];then
+               MSVERSION=$(curl -s https://github.com/metersphere/metersphere/releases/latest |grep -Eo 'v[0-9]+.[0-9]+.[0-9]+')
+         else
+               MSVERSION=$(curl -s https://github.com/metersphere/metersphere/releases/latest/download 2>&1 | grep -Po 'v[0-9]+\.[0-9]+\.[0-9]+.*(?=")')
+         fi
+         wget --no-check-certificate https://github.com/metersphere/metersphere/releases/latest/download/metersphere-release-${MSVERSION}.tar.gz -O /tmp/metersphere-release-${MSVERSION}.tar.gz
    else
-      MSVERSION=$(curl -s https://github.com/metersphere/metersphere/releases/latest/download 2>&1 | grep -Po 'v[0-9]+\.[0-9]+\.[0-9]+.*(?=")')
+   # 传入有第二个参数时，作为代理服务器使用
+        if [[ $os =~ 'Darwin' ]];then
+              MSVERSION=$(curl -x ${target} -s https://github.com/metersphere/metersphere/releases/latest |grep -Eo 'v[0-9]+.[0-9]+.[0-9]+')
+        else
+              MSVERSION=$(curl -x ${target} -s https://github.com/metersphere/metersphere/releases/latest/download 2>&1 | grep -Po 'v[0-9]+\.[0-9]+\.[0-9]+.*(?=")')
+        fi
+        wget  -x ${target} --no-check-certificate https://github.com/metersphere/metersphere/releases/latest/download/metersphere-release-${MSVERSION}.tar.gz -O /tmp/metersphere-release-${MSVERSION}.tar.gz
+
    fi
 
-   wget --no-check-certificate https://github.com/metersphere/metersphere/releases/latest/download/metersphere-release-${MSVERSION}.tar.gz -O /tmp/metersphere-release-${MSVERSION}.tar.gz
    cd /tmp;tar zxvf metersphere-release-${MSVERSION}.tar.gz
    cd metersphere-release-${MSVERSION}
 

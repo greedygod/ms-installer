@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #Install Latest Stable MeterSphere Release
 
 os=`uname -a`

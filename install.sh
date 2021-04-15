@@ -3,7 +3,7 @@ CURRENT_DIR=$(
    cd "$(dirname "$0")"
    pwd
 )
-os=`uname -a`
+os=$(uname -a)
 function log() {
    message="[MeterSphere Log]: $1 "
    echo -e "${message}" 2>&1 | tee -a ${CURRENT_DIR}/install.log
@@ -12,15 +12,15 @@ args=$@
 
 compose_files="-f docker-compose-base.yml"
 set -a
-if [[ $os =~ 'Darwin' ]];then
-    sed -i -e "s#MS_BASE=.*#MS_BASE=~#g" ${CURRENT_DIR}/install.conf
-    sed -i -e "s#MS_KAFKA_HOST=.*#MS_KAFKA_HOST=$(ipconfig getifaddr en0)#g" ${CURRENT_DIR}/install.conf
+if [[ $os =~ 'Darwin' ]]; then
+   sed -i -e "s#MS_BASE=.*#MS_BASE=~#g" ${CURRENT_DIR}/install.conf
+   sed -i -e "s#MS_KAFKA_HOST=.*#MS_KAFKA_HOST=$(ipconfig getifaddr en0)#g" ${CURRENT_DIR}/install.conf
 fi
 source ${CURRENT_DIR}/install.conf
 MS_JMETER_TAG=$(cat install.conf | grep MS_JMETER_TAG | awk -F= 'NR==1{print $2}')
-if [[ -f ${MS_BASE}/metersphere/.env ]];then
-   echo MS_TAG=$MS_TAG >> ${MS_BASE}/metersphere/.env
-   echo MS_JMETER_TAG=$MS_JMETER_TAG >> ${MS_BASE}/metersphere/.env
+if [[ -f ${MS_BASE}/metersphere/.env ]]; then
+   echo MS_TAG=$MS_TAG >>${MS_BASE}/metersphere/.env
+   echo MS_JMETER_TAG=$MS_JMETER_TAG >>${MS_BASE}/metersphere/.env
    source ${MS_BASE}/metersphere/.env
 fi
 set +a
@@ -63,7 +63,7 @@ else
 fi
 
 docker ps 1>/dev/null 2>/dev/null
-if [ $? != 0 ];then
+if [ $? != 0 ]; then
    log "Docker 未正常启动，请先安装并启动 Docker 服务后再次执行本脚本"
    exit
 fi
@@ -86,7 +86,7 @@ else
 fi
 
 docker-compose version 1>/dev/null 2>/dev/null
-if [ $? != 0 ];then
+if [ $? != 0 ]; then
    log "docker-compose 未正常安装，请先安装 docker-compose 后再次执行本脚本"
    exit
 fi
@@ -131,7 +131,7 @@ fi
 echo ${compose_files} >${MS_BASE}/metersphere/compose_files
 
 cd ${MS_BASE}/metersphere && docker-compose $(cat compose_files) config 1>/dev/null 2>/dev/null
-if [ $? != 0 ];then
+if [ $? != 0 ]; then
    log "docker-compose 版本与配置文件不兼容，请重新安装最新版本的 docker-compose"
    exit
 fi
